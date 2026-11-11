@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f4efe6">
+<meta name="format-detection" content="telephone=no">
+<title>N2 听力 · 即时应答</title>
+<style>
+  :root {
+    --bg: #f4efe6;
+    --paper: #fffdf8;
+    --ink: #1c1917;
+    --muted: #6b645c;
+    --line: #e6dfd2;
+    --accent: #9a3412;
+    --accent-soft: #ffedd5;
+    --good: #047857;
+    --good-bg: #ecfdf5;
+    --bad: #be123c;
+    --bad-bg: #fff1f2;
+    --chip: #fff;
+    --shadow: 0 8px 28px rgba(28, 25, 23, 0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    height: 100dvh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Source Han Sans SC",
+      "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP",
+      system-ui, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    padding: calc(10px + var(--safe-top)) 12px calc(10px + var(--safe-bottom));
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  header { flex: 0 0 auto; }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  h1 span { color: var(--accent); font-weight: 600; }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .chip {
+    border: 1px solid var(--line);
+    background: var(--chip);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.3;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .chip.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .chip.forgotten.active {
+    background: var(--bad);
+    border-color: var(--bad);
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    min-height: 32px;
+  }
+  .pos {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .tools { display: flex; gap: 6px; align-items: center; }
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--chip);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 6px 11px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: inherit;
+  }
+  .btn.active {
+    background: var(--accent-soft);
+    border-color: #fdba74;
+    color: var(--accent);
+  }
+  .btn.ghost { background: transparent; color: var(--muted); font-size: 12px; padding: 6px 8px; }
+  .stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-wrap {
+    flex: 1 1 auto;
+    min-height: 220px;
+    perspective: 1400px;
+    touch-action: none;
+    position: relative;
+  }
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(.2,.8,.2,1);
+    cursor: pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 18px 18px 16px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .front { transform: rotateY(0deg) translateZ(1px); }
+  .back { transform: rotateY(180deg) translateZ(1px); }
+  .meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    flex: 0 0 auto;
+  }
+  .pattern {
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 16px;
+    line-height: 1.45;
+    flex: 0 0 auto;
+  }
+  .jp {
+    font-size: 22px;
+    line-height: 1.55;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    flex: 1 1 auto;
+  }
+  .speaker { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 2px; }
+  .hint {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 14px;
+  }
+  .label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin: 0 0 6px;
+  }
+  .zh {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #44403c;
+    line-height: 1.55;
+  }
+  .zh b { color: var(--muted); font-weight: 600; margin-right: 4px; }
+  .badge {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    align-self: flex-start;
+  }
+  .empty {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--muted);
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+    padding: 24px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .actions .btn { flex: 1; padding: 12px 10px; font-size: 15px; font-weight: 650; border-radius: 12px; }
+  .btn.bad { background: var(--bad-bg); color: var(--bad); border-color: #fecdd3; }
+  .btn.good { background: var(--good-bg); color: var(--good); border-color: #a7f3d0; }
+  .nav {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .nav .btn { flex: 1; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>N2 听力 · <span>即时应答</span></h1>
+    <div class="filters" id="filters"></div>
+    <div class="toolbar">
+      <div class="pos" id="pos">0 / 0</div>
+      <div class="tools">
+        <button type="button" class="btn" id="shuffleBtn" aria-pressed="false">乱序</button>
+        <button type="button" class="btn ghost" id="clearBtn">清空标记</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="card">
+        <div class="face front" id="front"></div>
+        <div class="face back" id="back"></div>
+      </div>
+      <div class="empty hidden" id="empty"></div>
+    </div>
+    <div class="actions hidden" id="markActions">
+      <button type="button" class="btn bad" id="forgetBtn">没记住</button>
+      <button type="button" class="btn good" id="rememberBtn">记住了</button>
+    </div>
+    <div class="nav" id="nav">
+      <button type="button" class="btn" id="prevBtn">上一张</button>
+      <button type="button" class="btn" id="nextBtn">下一张</button>
+    </div>
+  </div>
+
+<script>
+const GROUPS = [
+  {
+    "id": 1,
+    "name": "許可を求める",
+    "zh": "求许可"
+  },
+  {
+    "id": 2,
+    "name": "問いかける",
+    "zh": "提问确认"
+  },
+  {
+    "id": 3,
+    "name": "非難する・苦情を言う",
+    "zh": "指责/抱怨"
+  },
+  {
+    "id": 4,
+    "name": "指示する",
+    "zh": "下指示"
+  },
+  {
+    "id": 5,
+    "name": "確認する",
+    "zh": "确认"
+  },
+  {
+    "id": 6,
+    "name": "定型表現",
+    "zh": "套话"
+  },
+  {
+    "id": 7,
+    "name": "禁止する（注意する）",
+    "zh": "禁止/提醒"
+  },
+  {
+    "id": 8,
+    "name": "お願いする（依頼する）",
+    "zh": "请求"
+  },
+  {
+    "id": 9,
+    "name": "強い気持ちを表す",
+    "zh": "表达强烈情绪"
+  },
+  {
+    "id": 10,
+    "name": "感心する",
+    "zh": "感叹佩服"
+  },
+  {
+    "id": 11,
+    "name": "義務・当然を表す",
+    "zh": "表达义务/理所当然"
+  },
+  {
+    "id": 12,
+    "name": "丁寧に断る",
+    "zh": "委婉拒绝"
+  },
+  {
+    "id": 13,
+    "name": "考えを伝える",
+    "zh": "表达想法"
+  }
+];
+const CARDS = [
+  {
+    "id": "1-1",
+    "group": 1,
+    "pattern": "〜てもよろしいですか",
+    "prompt_speaker": "",
+    "prompt": "この資料、拝見してもよろしいですか",
+    "prompt_zh": "我可以看一下这份资料吗",
+    "answer_speaker": "",
+    "answer": "はい、どうぞご覧ください",
+    "answer_zh": "可以，请看",
+    "practice": null
+  },
+  {
+    "id": "1-2",
+    "group": 1,
+    "pattern": "〜てもかまいませんか",
+    "prompt_speaker": "",
+    "prompt": "ここでタバコ、吸ってもかまいませんか",
+    "prompt_zh": "这里可以抽烟吗",
+    "answer_speaker": "",
+    "answer": "ここはちょっと……",
+    "answer_zh": "这里不太方便……（婉拒）",
+    "practice": null
+  },
+  {
+    "id": "1-3",
+    "group": 1,
+    "pattern": "〜せていただくわけにはいきませんか",
+    "prompt_speaker": "",
+    "prompt": "そのコピー機、先に使わせていただくわけにはいきませんか",
+    "prompt_zh": "能否让我先用一下那台复印机",
+    "answer_speaker": "",
+    "answer": "どうぞお使いください",
+    "answer_zh": "请用",
+    "practice": 1
+  },
+  {
+    "id": "1-4",
+    "group": 1,
+    "pattern": "〜ても……。",
+    "prompt_speaker": "",
+    "prompt": "このかさ、お借りしても……",
+    "prompt_zh": "这把伞能借我吗……",
+    "answer_speaker": "",
+    "answer": "どうぞお使いください",
+    "answer_zh": "请用",
+    "practice": null
+  },
+  {
+    "id": "2-1",
+    "group": 2,
+    "pattern": "〜ったっけ",
+    "prompt_speaker": "",
+    "prompt": "今日、何か宿題、あったっけ?",
+    "prompt_zh": "今天有布置作业吗，我记不清了",
+    "answer_speaker": "",
+    "answer": "何も出てなかったと思うよ",
+    "answer_zh": "我记得没布置",
+    "practice": 2
+  },
+  {
+    "id": "2-2",
+    "group": 2,
+    "pattern": "〜かな",
+    "prompt_speaker": "",
+    "prompt": "このかばん、いくらぐらいするのかな?",
+    "prompt_zh": "这包大概多少钱呢",
+    "answer_speaker": "",
+    "answer": "きっと高いでしょうね",
+    "answer_zh": "肯定很贵吧",
+    "practice": null
+  },
+  {
+    "id": "2-3",
+    "group": 2,
+    "pattern": "〜たでしょうか（郑重问法）",
+    "prompt_speaker": "店員",
+    "prompt": "お客さま、何かございましたでしょうか",
+    "prompt_zh": "客人，有什么问题吗",
+    "answer_speaker": "客",
+    "answer": "これ、注文と違うんですが",
+    "answer_zh": "这跟我点的不一样",
+    "practice": null
+  },
+  {
+    "id": "3-1",
+    "group": 3,
+    "pattern": "〜じゃない",
+    "prompt_speaker": "",
+    "prompt": "こんな書き方じゃ、わかるわけないじゃない",
+    "prompt_zh": "这么写谁能看懂啊",
+    "answer_speaker": "",
+    "answer": "もう一度。書き直します",
+    "answer_zh": "我重写一遍",
+    "practice": null
+  },
+  {
+    "id": "3-2",
+    "group": 3,
+    "pattern": "〜じゃないか",
+    "prompt_speaker": "",
+    "prompt": "なんだ、全然仕事が進んでないじゃないか",
+    "prompt_zh": "怎么搞的，工作一点都没进展嘛",
+    "answer_speaker": "",
+    "answer": "すみません。昨日より進んだほうなんですが",
+    "answer_zh": "抱歉，其实比昨天有进展了",
+    "practice": null
+  },
+  {
+    "id": "3-3",
+    "group": 3,
+    "pattern": "〜なんて……",
+    "prompt_speaker": "",
+    "prompt": "昨日待ってたのに、だまって、帰るなんて……",
+    "prompt_zh": "昨天我等了你，你居然一声不吭就走了……",
+    "answer_speaker": "",
+    "answer": "あ、ごめん。急用ができちゃって",
+    "answer_zh": "啊抱歉，临时有急事",
+    "practice": null
+  },
+  {
+    "id": "3-4",
+    "group": 3,
+    "pattern": "〜ばいいというものじゃない",
+    "prompt_speaker": "",
+    "prompt": "謝ればいいってもんじゃないでしょう",
+    "prompt_zh": "不是道个歉就完事了吧",
+    "answer_speaker": "",
+    "answer": "すみません",
+    "answer_zh": "对不起",
+    "practice": null
+  },
+  {
+    "id": "4-1",
+    "group": 4,
+    "pattern": "〜てみて",
+    "prompt_speaker": "",
+    "prompt": "見た目はともかく、味をもう少し工夫してみて",
+    "prompt_zh": "外观先不说，味道再琢磨一下",
+    "answer_speaker": "",
+    "answer": "はい。じゃ、もう少し塩を入れてみます",
+    "answer_zh": "好，那我再加点盐试试",
+    "practice": 4
+  },
+  {
+    "id": "4-2",
+    "group": 4,
+    "pattern": "〜てもらって",
+    "prompt_speaker": "上司",
+    "prompt": "山村さんに10時に事務所に来てもらって",
+    "prompt_zh": "让山村10点来事务所",
+    "answer_speaker": "秘書",
+    "answer": "はい、わかりました",
+    "answer_zh": "好的",
+    "practice": null
+  },
+  {
+    "id": "4-3",
+    "group": 4,
+    "pattern": "〜といて（＝〜ておいて的口语）",
+    "prompt_speaker": "上司",
+    "prompt": "例の件、みんなに連絡しといて",
+    "prompt_zh": "那件事先通知大家一下",
+    "answer_speaker": "部下",
+    "answer": "わかりました。今日中にしておきます",
+    "answer_zh": "好的，今天之内办好",
+    "practice": null
+  },
+  {
+    "id": "4-4",
+    "group": 4,
+    "pattern": "〜ように",
+    "prompt_speaker": "先生",
+    "prompt": "この作文は、来週の月曜日に出すように",
+    "prompt_zh": "这篇作文下周一交",
+    "answer_speaker": "学生",
+    "answer": "はい、わかりました",
+    "answer_zh": "好的",
+    "practice": null
+  },
+  {
+    "id": "4-5",
+    "group": 4,
+    "pattern": "（〜は）任せた",
+    "prompt_speaker": "上司",
+    "prompt": "この仕事、田中君に任せたよ",
+    "prompt_zh": "这项工作就交给田中你了",
+    "answer_speaker": "部下",
+    "answer": "はい、精一杯がんばります",
+    "answer_zh": "好的，我会全力以赴",
+    "practice": null
+  },
+  {
+    "id": "5-1",
+    "group": 5,
+    "pattern": "〜たよね",
+    "prompt_speaker": "",
+    "prompt": "会議って、3時からでしたよね",
+    "prompt_zh": "会议是3点开始对吧",
+    "answer_speaker": "",
+    "answer": "ちょっと確認します",
+    "answer_zh": "我确认一下",
+    "practice": 5
+  },
+  {
+    "id": "5-2",
+    "group": 5,
+    "pattern": "〜だった?",
+    "prompt_speaker": "夫",
+    "prompt": "買い物、これだった?",
+    "prompt_zh": "要买的是这个吧？",
+    "answer_speaker": "妻",
+    "answer": "そう。ありがとう",
+    "answer_zh": "对，谢谢",
+    "practice": null
+  },
+  {
+    "id": "5-3",
+    "group": 5,
+    "pattern": "確かに〜か",
+    "prompt_speaker": "店員",
+    "prompt": "確かにここに置かれましたか",
+    "prompt_zh": "您确定是放在这里的吗",
+    "answer_speaker": "客",
+    "answer": "ええ、置いたと思うんですけど",
+    "answer_zh": "是的，我记得放这儿了",
+    "practice": null
+  },
+  {
+    "id": "5-4",
+    "group": 5,
+    "pattern": "〜で間違いないですか",
+    "prompt_speaker": "",
+    "prompt": "締切って、明日で間違いないですか",
+    "prompt_zh": "截止日期确定是明天吗",
+    "answer_speaker": "",
+    "answer": "いいえ、あさってですよ",
+    "answer_zh": "不，是后天",
+    "practice": null
+  },
+  {
+    "id": "6-1",
+    "group": 6,
+    "pattern": "（收到伴手礼时）",
+    "prompt_speaker": "",
+    "prompt": "これ、フランスのおみやげ、少しだけど、どうぞ",
+    "prompt_zh": "这是从法国带的一点点小礼物，请收下",
+    "answer_speaker": "",
+    "answer": "いつもすみません。行くたびに、買ってきていただいて",
+    "answer_zh": "每次都麻烦您带东西，真不好意思",
+    "practice": 6
+  },
+  {
+    "id": "6-2",
+    "group": 6,
+    "pattern": "（商务电话转接）",
+    "prompt_speaker": "",
+    "prompt": "折り返しお電話いたしましょうか",
+    "prompt_zh": "要不要请他回电给您",
+    "answer_speaker": "",
+    "answer": "はい、お願いします",
+    "answer_zh": "好的，麻烦了",
+    "practice": null
+  },
+  {
+    "id": "6-3",
+    "group": 6,
+    "pattern": "（书店代为保留）",
+    "prompt_speaker": "店員",
+    "prompt": "お取り置き、できますが",
+    "prompt_zh": "可以帮您留着",
+    "answer_speaker": "客",
+    "answer": "では、お願いします",
+    "answer_zh": "那就麻烦了",
+    "practice": null
+  },
+  {
+    "id": "6-4",
+    "group": 6,
+    "pattern": "（车站补票）",
+    "prompt_speaker": "駅員",
+    "prompt": "乗り越しのご清算は、あちらの機械でお願いいたします",
+    "prompt_zh": "补票请到那边的机器办理",
+    "answer_speaker": "客",
+    "answer": "あの機械ですね。わかりました",
+    "answer_zh": "那台机器是吧，明白了",
+    "practice": null
+  },
+  {
+    "id": "6-5",
+    "group": 6,
+    "pattern": "（寒暄，久未联系）",
+    "prompt_speaker": "",
+    "prompt": "ご無沙汰ばかりで申し訳ありません",
+    "prompt_zh": "一直没联系，很抱歉",
+    "answer_speaker": "",
+    "answer": "こちらこそご無沙汰いたしております",
+    "answer_zh": "我这边也是，彼此彼此",
+    "practice": null
+  },
+  {
+    "id": "6-6",
+    "group": 6,
+    "pattern": "（店内，付款方式）",
+    "prompt_speaker": "店員",
+    "prompt": "お支払いは1回でよろしいですか",
+    "prompt_zh": "一次性付款可以吗",
+    "answer_speaker": "客",
+    "answer": "いえ、2回でお願いします",
+    "answer_zh": "不，请分两次",
+    "practice": null
+  },
+  {
+    "id": "6-7",
+    "group": 6,
+    "pattern": "（餐厅结账）",
+    "prompt_speaker": "店員",
+    "prompt": "お会計はご一緒でよろしいですか",
+    "prompt_zh": "一起结账可以吗",
+    "answer_speaker": "客",
+    "answer": "いえ、別々で",
+    "answer_zh": "不，分开算",
+    "practice": null
+  },
+  {
+    "id": "6-8",
+    "group": 6,
+    "pattern": "（商务场合接待）",
+    "prompt_speaker": "",
+    "prompt": "山本さん、いらっしゃいますでしょうか",
+    "prompt_zh": "请问山本先生在吗",
+    "answer_speaker": "",
+    "answer": "失礼ですが……",
+    "answer_zh": "不好意思，请问您是……",
+    "practice": null
+  },
+  {
+    "id": "6-9",
+    "group": 6,
+    "pattern": "（寒暄，答谢礼物）",
+    "prompt_speaker": "",
+    "prompt": "先日は結構なものを頂戴しまして、ありがとうございました",
+    "prompt_zh": "前几天收到您的厚礼，非常感谢",
+    "answer_speaker": "",
+    "answer": "いえ、少しばかりで申し訳ありません",
+    "answer_zh": "不客气，一点小心意，不成敬意",
+    "practice": null
+  },
+  {
+    "id": "6-10",
+    "group": 6,
+    "pattern": "（打电话订酒店房间）",
+    "prompt_speaker": "客",
+    "prompt": "12日にツインでお願いしたいんですが",
+    "prompt_zh": "我想订12号的双床房",
+    "answer_speaker": "フロント",
+    "answer": "12日、ツインでございますね。ご用意できます",
+    "answer_zh": "12号双床房，好的，可以安排",
+    "practice": null
+  },
+  {
+    "id": "6-11",
+    "group": 6,
+    "pattern": "（店内换零钱）",
+    "prompt_speaker": "客",
+    "prompt": "すみません。細かいのがなくて……",
+    "prompt_zh": "不好意思，我没有零钱……",
+    "answer_speaker": "店員",
+    "answer": "両替しましょうか",
+    "answer_zh": "要不要帮您换零钱",
+    "practice": null
+  },
+  {
+    "id": "6-12",
+    "group": 6,
+    "pattern": "（久别重逢寒暄）",
+    "prompt_speaker": "",
+    "prompt": "久しぶりですね。お元気ですか",
+    "prompt_zh": "好久不见，最近好吗",
+    "answer_speaker": "",
+    "answer": "はい、おかげさまで",
+    "answer_zh": "挺好的，托您的福",
+    "practice": null
+  },
+  {
+    "id": "7-1",
+    "group": 7,
+    "pattern": "〜ないこと",
+    "prompt_speaker": "上司",
+    "prompt": "お客様には失礼な態度はとらないこと、いいですね",
+    "prompt_zh": "不许对客人失礼，明白吗",
+    "answer_speaker": "部下",
+    "answer": "はい、わかりました",
+    "answer_zh": "明白",
+    "practice": null
+  },
+  {
+    "id": "7-2",
+    "group": 7,
+    "pattern": "〜はだめ",
+    "prompt_speaker": "",
+    "prompt": "ここは自転車はだめよ",
+    "prompt_zh": "这里不能骑自行车",
+    "answer_speaker": "",
+    "answer": "じゃ、そこならいいですか",
+    "answer_zh": "那那边可以吗",
+    "practice": 7
+  },
+  {
+    "id": "7-3",
+    "group": 7,
+    "pattern": "〜べきではない",
+    "prompt_speaker": "先輩",
+    "prompt": "親にそんなこと、言うべきではないよ",
+    "prompt_zh": "不该对父母说那种话",
+    "answer_speaker": "後輩",
+    "answer": "わかってはいるんですけどね。つい……",
+    "answer_zh": "我也知道，可就是忍不住……",
+    "practice": null
+  },
+  {
+    "id": "7-4",
+    "group": 7,
+    "pattern": "〜っぱなし",
+    "prompt_speaker": "妻",
+    "prompt": "あなた、またトイレの電気、つけっぱなしよ",
+    "prompt_zh": "你又忘关厕所灯了",
+    "answer_speaker": "夫",
+    "answer": "あ、ごめん",
+    "answer_zh": "啊，抱歉",
+    "practice": null
+  },
+  {
+    "id": "7-5",
+    "group": 7,
+    "pattern": "〜ないことになる",
+    "prompt_speaker": "事務員",
+    "prompt": "このコピー機は、学生は使えないことになっていますよ",
+    "prompt_zh": "这台复印机规定学生不能用",
+    "answer_speaker": "学生",
+    "answer": "あ、そうですか。学生用のはどこにありますか",
+    "answer_zh": "这样啊，学生用的在哪里",
+    "practice": null
+  },
+  {
+    "id": "8-1",
+    "group": 8,
+    "pattern": "〜てもらえるとありがたいんですが",
+    "prompt_speaker": "",
+    "prompt": "日曜日の引っ越し、手伝ってもらえるとありがたいんだけど",
+    "prompt_zh": "周日搬家能帮忙的话就太好了",
+    "answer_speaker": "",
+    "answer": "日曜なら、問題ないですよ",
+    "answer_zh": "周日的话没问题",
+    "practice": 8
+  },
+  {
+    "id": "8-2",
+    "group": 8,
+    "pattern": "〜てくれないかな",
+    "prompt_speaker": "",
+    "prompt": "悪いけど、時間、変更してくれないかな?",
+    "prompt_zh": "不好意思，能改一下时间吗",
+    "answer_speaker": "",
+    "answer": "ええー、急に言われても……",
+    "answer_zh": "哎，突然这么说……",
+    "practice": null
+  },
+  {
+    "id": "8-3",
+    "group": 8,
+    "pattern": "〜といて",
+    "prompt_speaker": "",
+    "prompt": "これ、山田さんに渡しといて",
+    "prompt_zh": "这个帮我转交给山田",
+    "answer_speaker": "",
+    "answer": "わかった",
+    "answer_zh": "知道了",
+    "practice": null
+  },
+  {
+    "id": "8-4",
+    "group": 8,
+    "pattern": "〜てて",
+    "prompt_speaker": "",
+    "prompt": "少し待ってて",
+    "prompt_zh": "稍等一下",
+    "answer_speaker": "",
+    "answer": "うん。時間、ないから、急いで",
+    "answer_zh": "嗯，时间不多了，快点",
+    "practice": null
+  },
+  {
+    "id": "9-1",
+    "group": 9,
+    "pattern": "〜（て/で）ならない",
+    "prompt_speaker": "",
+    "prompt": "息子の就職が決まらないので、心配でならないよ",
+    "prompt_zh": "儿子工作还没定下来，实在担心",
+    "answer_speaker": "",
+    "answer": "そうですか。それはご心配ですね",
+    "answer_zh": "是吗，那确实让人担心",
+    "practice": null
+  },
+  {
+    "id": "9-2",
+    "group": 9,
+    "pattern": "〜てたまらない／〜てしょうがない",
+    "prompt_speaker": "",
+    "prompt": "昨日から歯が痛くてたまらないの",
+    "prompt_zh": "昨天起牙疼得受不了",
+    "answer_speaker": "",
+    "answer": "歯医者に行ったほうがいいよ",
+    "answer_zh": "还是去看牙医比较好",
+    "practice": null
+  },
+  {
+    "id": "9-3",
+    "group": 9,
+    "pattern": "〜もんか",
+    "prompt_speaker": "",
+    "prompt": "遊んでばかりいるジョンさんが試験に合格できるもんか",
+    "prompt_zh": "成天只知道玩的约翰怎么可能考得过",
+    "answer_speaker": "",
+    "answer": "そうよね。絶対無理よね",
+    "answer_zh": "就是，绝对不可能",
+    "practice": 9
+  },
+  {
+    "id": "10-1",
+    "group": 10,
+    "pattern": "〜もの",
+    "prompt_speaker": "",
+    "prompt": "安い材料でも、おいしい料理が作れるもんなのね",
+    "prompt_zh": "就算食材便宜也能做出好吃的菜啊",
+    "answer_speaker": "",
+    "answer": "ぼくの腕がいいんだよ",
+    "answer_zh": "因为我手艺好嘛",
+    "practice": 10
+  },
+  {
+    "id": "10-2",
+    "group": 10,
+    "pattern": "さすが〜だけあって",
+    "prompt_speaker": "",
+    "prompt": "さすがスピーチ大会で優勝しただけあって、日本語がお上手ね",
+    "prompt_zh": "不愧是演讲比赛冠军，日语真好",
+    "answer_speaker": "",
+    "answer": "いえ、まだまだです",
+    "answer_zh": "哪里哪里，还差得远",
+    "practice": null
+  },
+  {
+    "id": "10-3",
+    "group": 10,
+    "pattern": "〜にしかできないことだ",
+    "prompt_speaker": "",
+    "prompt": "あんなプレーはプロにしかできないことだね",
+    "prompt_zh": "那种表现只有职业选手才做得到",
+    "answer_speaker": "",
+    "answer": "うん、ぼくたちには無理だね",
+    "answer_zh": "是啊，我们做不到",
+    "practice": null
+  },
+  {
+    "id": "10-4",
+    "group": 10,
+    "pattern": "〜なんて（信じられない）",
+    "prompt_speaker": "",
+    "prompt": "この絵を小学生が描いたなんて……",
+    "prompt_zh": "这幅画竟然是小学生画的……",
+    "answer_speaker": "",
+    "answer": "本当にすばらしいですね",
+    "answer_zh": "真的很厉害",
+    "practice": null
+  },
+  {
+    "id": "10-5",
+    "group": 10,
+    "pattern": "〜くらい〜は（い）ない",
+    "prompt_speaker": "",
+    "prompt": "チンさんくらいよく勉強する人はいないね",
+    "prompt_zh": "没有比小陈更用功的人了",
+    "answer_speaker": "",
+    "answer": "本当だね。あんなに真面目な人、見たことないよ",
+    "answer_zh": "真的，没见过比她更认真的人",
+    "practice": null
+  },
+  {
+    "id": "10-6",
+    "group": 10,
+    "pattern": "〜わりには（〜にしては）",
+    "prompt_speaker": "",
+    "prompt": "杉浦さん、子供が3人もいるわりには、若いわね",
+    "prompt_zh": "杉浦都三个孩子了，看着还挺年轻",
+    "answer_speaker": "",
+    "answer": "うん、まだ20代に見えるよね",
+    "answer_zh": "是啊，看着还像二十几岁",
+    "practice": null
+  },
+  {
+    "id": "11-1",
+    "group": 11,
+    "pattern": "〜なきゃ（＝なければならない）",
+    "prompt_speaker": "",
+    "prompt": "今日は早く寝なきゃ",
+    "prompt_zh": "今天得早点睡",
+    "answer_speaker": "",
+    "answer": "どうして?",
+    "answer_zh": "为什么",
+    "practice": null
+  },
+  {
+    "id": "11-2",
+    "group": 11,
+    "pattern": "〜なくちゃ（＝なくてはいけない）",
+    "prompt_speaker": "",
+    "prompt": "あと3キロダイエットしなくちゃ",
+    "prompt_zh": "还得再减3公斤",
+    "answer_speaker": "",
+    "answer": "する必要ないよ",
+    "answer_zh": "没必要吧",
+    "practice": null
+  },
+  {
+    "id": "11-3",
+    "group": 11,
+    "pattern": "〜は当たり前だ",
+    "prompt_speaker": "",
+    "prompt": "お世話になっている人に年賀状を書くのは当たり前だよ",
+    "prompt_zh": "给关照过自己的人寄贺年卡是理所当然的",
+    "answer_speaker": "",
+    "answer": "それが日本の習慣なのね",
+    "answer_zh": "原来这是日本的习惯",
+    "practice": 11
+  },
+  {
+    "id": "11-4",
+    "group": 11,
+    "pattern": "〜ないわけにはいかない",
+    "prompt_speaker": "",
+    "prompt": "部長の息子さんの結婚式、出席しないわけにはいかないわよね",
+    "prompt_zh": "部长儿子的婚礼总不能不去吧",
+    "answer_speaker": "",
+    "answer": "そうだね。部長にはお世話になっているからね",
+    "answer_zh": "是啊，一直受部长照顾",
+    "practice": null
+  },
+  {
+    "id": "12-1",
+    "group": 12,
+    "pattern": "お気持ちはありがたいんですが",
+    "prompt_speaker": "",
+    "prompt": "送別会ですか。お気持ちはありがたいんですが、1カ月しか働いていないので……",
+    "prompt_zh": "欢送会吗？心意我领了，但我才入职一个月……",
+    "answer_speaker": "",
+    "answer": "そんな、期間は関係ありませんよ",
+    "answer_zh": "没关系的，跟时间长短无关",
+    "practice": 12
+  },
+  {
+    "id": "12-2",
+    "group": 12,
+    "pattern": "せっかく〜のに、申し訳ない（悪い）んですが",
+    "prompt_speaker": "",
+    "prompt": "せっかく買ってきてくれたのに、悪いんだけど、今ご飯、食べたばかりで……",
+    "prompt_zh": "你特意买回来的，不好意思，我刚吃过饭……",
+    "answer_speaker": "",
+    "answer": "なら、後で食べて。冷蔵庫に入れておいたらいいし",
+    "answer_zh": "那就晚点吃，先放冰箱里",
+    "practice": null
+  },
+  {
+    "id": "12-3",
+    "group": 12,
+    "pattern": "〜にはおよばない",
+    "prompt_speaker": "",
+    "prompt": "そんなお気遣いにはおよびません",
+    "prompt_zh": "不用这么费心",
+    "answer_speaker": "",
+    "answer": "ほんの気持ちですから、どうぞ受け取ってください",
+    "answer_zh": "这只是一点心意，请收下",
+    "practice": null
+  },
+  {
+    "id": "12-4",
+    "group": 12,
+    "pattern": "せっかくのお話なんですが……",
+    "prompt_speaker": "",
+    "prompt": "せっかくのお話なんですが、今好きな女性がいまして",
+    "prompt_zh": "这么好的提议，不好意思，我现在有喜欢的人了",
+    "answer_speaker": "",
+    "answer": "まあ、それはいいことね",
+    "answer_zh": "那也是件好事",
+    "practice": null
+  },
+  {
+    "id": "13-1",
+    "group": 13,
+    "pattern": "〜んじゃないでしょうか",
+    "prompt_speaker": "",
+    "prompt": "この仕事、彼には無理なんじゃないでしょうか",
+    "prompt_zh": "这项工作对他来说是不是太难了",
+    "answer_speaker": "",
+    "answer": "いや、彼なら、できますよ",
+    "answer_zh": "不会，他能做到",
+    "practice": null
+  },
+  {
+    "id": "13-2",
+    "group": 13,
+    "pattern": "〜んじゃない",
+    "prompt_speaker": "",
+    "prompt": "ヤンさん、遅いわね",
+    "prompt_zh": "小杨怎么这么晚",
+    "answer_speaker": "",
+    "answer": "もう来ないんじゃない?",
+    "answer_zh": "该不会不来了吧",
+    "practice": null
+  },
+  {
+    "id": "13-3",
+    "group": 13,
+    "pattern": "〜んじゃないかと……",
+    "prompt_speaker": "",
+    "prompt": "彼女、ぼくのこと、嫌いになったんじゃないかと……",
+    "prompt_zh": "我总觉得她是不是不喜欢我了……",
+    "answer_speaker": "",
+    "answer": "そんなことないって",
+    "answer_zh": "不会的",
+    "practice": null
+  },
+  {
+    "id": "13-4",
+    "group": 13,
+    "pattern": "〜気がする",
+    "prompt_speaker": "",
+    "prompt": "この宝くじ、当たる気がする",
+    "prompt_zh": "我感觉这张彩票会中奖",
+    "answer_speaker": "",
+    "answer": "そんなはずないじゃん",
+    "answer_zh": "不可能吧",
+    "practice": null
+  }
+];
+const STORAGE_KEY = "n2-sokuji-v1";
+
+const $ = (id) => document.getElementById(id);
+const filtersEl = $("filters");
+const posEl = $("pos");
+const shuffleBtn = $("shuffleBtn");
+const clearBtn = $("clearBtn");
+const cardWrap = $("cardWrap");
+const cardEl = $("card");
+const frontEl = $("front");
+const backEl = $("back");
+const emptyEl = $("empty");
+const markActions = $("markActions");
+const forgetBtn = $("forgetBtn");
+const rememberBtn = $("rememberBtn");
+const prevBtn = $("prevBtn");
+const nextBtn = $("nextBtn");
+
+function loadMarks() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    const data = JSON.parse(raw);
+    const list = Array.isArray(data) ? data : (data && data.forgotten) || [];
+    return new Set(list);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function saveMarks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ forgotten: Array.from(marks) }));
+}
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function quoteLine(speaker, text) {
+  const q = "「" + text + "」";
+  if (!speaker) return q;
+  return '<span class="speaker">' + speaker + "</span>" + q;
+}
+
+function groupOf(card) {
+  return GROUPS.find((g) => g.id === card.group);
+}
+
+let marks = loadMarks();
+let filter = "all"; // "all" | "forgotten" | group number
+let shuffled = false;
+let index = 0;
+let flipped = false;
+let list = [];
+let ignoreClick = false;
+
+function buildList() {
+  let src;
+  if (filter === "all") src = CARDS.slice();
+  else if (filter === "forgotten") src = CARDS.filter((c) => marks.has(c.id));
+  else src = CARDS.filter((c) => c.group === filter);
+  list = shuffled ? shuffleArray(src) : src;
+  if (index >= list.length) index = Math.max(0, list.length - 1);
+}
+
+function renderFilters() {
+  const parts = [];
+  const allActive = filter === "all" ? " active" : "";
+  parts.push('<button type="button" class="chip' + allActive + '" data-filter="all">全部 · ' + CARDS.length + "</button>");
+  const fc = marks.size;
+  const fActive = filter === "forgotten" ? " active forgotten" : "";
+  parts.push('<button type="button" class="chip forgotten' + fActive + '" data-filter="forgotten">没记住 · ' + fc + "</button>");
+  GROUPS.forEach((g) => {
+    const n = CARDS.filter((c) => c.group === g.id).length;
+    const active = filter === g.id ? " active" : "";
+    parts.push(
+      '<button type="button" class="chip' + active + '" data-filter="' + g.id + '">' +
+      g.id + " " + g.zh + " · " + n + "</button>"
+    );
+  });
+  filtersEl.innerHTML = parts.join("");
+}
+
+function renderCard() {
+  posEl.textContent = list.length ? (index + 1) + " / " + list.length : "0 / 0";
+  shuffleBtn.classList.toggle("active", shuffled);
+  shuffleBtn.setAttribute("aria-pressed", shuffled ? "true" : "false");
+  shuffleBtn.textContent = shuffled ? "顺序" : "乱序";
+
+  if (!list.length) {
+    cardEl.classList.add("hidden");
+    markActions.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    emptyEl.textContent = filter === "forgotten"
+      ? "还没有「没记住」的卡片。翻面后点「没记住」，之后就可以只刷这些。"
+      : "这个分组里没有卡片。";
+    return;
+  }
+
+  emptyEl.classList.add("hidden");
+  cardEl.classList.remove("hidden");
+  cardEl.classList.toggle("flipped", flipped);
+  markActions.classList.toggle("hidden", !flipped);
+
+  const c = list[index];
+  const g = groupOf(c);
+  const meta = "第" + g.id + "组 · " + g.name + "（" + g.zh + "）";
+  const practice = c.practice ? '<div class="badge">练习题' + c.practice + "</div>" : "";
+
+  frontEl.innerHTML =
+    '<div class="meta"></div>'.replace("</div>", meta + "</div>") +
+    '<div class="pattern"></div>'.replace("</div>", c.pattern + "</div>") +
+    '<div class="jp">' + quoteLine(c.prompt_speaker, c.prompt) + "</div>" +
+    '<div class="hint">点击看答案 · 左右滑动切换</div>';
+
+  backEl.innerHTML =
+    '<div class="meta"></div>'.replace("</div>", meta + "</div>") +
+    '<div class="pattern"></div>'.replace("</div>", c.pattern + "</div>") +
+    '<div class="label">回答</div>' +
+    '<div class="jp">' + quoteLine(c.answer_speaker, c.answer) + "</div>" +
+    '<div class="zh"><b>问：</b>' + c.prompt_zh + "</div>" +
+    '<div class="zh"><b>答：</b>' + c.answer_zh + "</div>" +
+    practice;
+}
+
+function go(to, resetFlip) {
+  if (!list.length) { renderCard(); return; }
+  const n = list.length;
+  index = ((to % n) + n) % n;
+  if (resetFlip !== false) flipped = false;
+  renderCard();
+}
+
+function setFilter(next) {
+  filter = next;
+  index = 0;
+  flipped = false;
+  buildList();
+  renderFilters();
+  renderCard();
+}
+
+filtersEl.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-filter]");
+  if (!btn) return;
+  const v = btn.getAttribute("data-filter");
+  setFilter(v === "all" || v === "forgotten" ? v : Number(v));
+});
+
+shuffleBtn.addEventListener("click", () => {
+  shuffled = !shuffled;
+  const currentId = list[index] && list[index].id;
+  buildList();
+  if (currentId) {
+    const i = list.findIndex((c) => c.id === currentId);
+    index = i >= 0 ? i : 0;
+  } else {
+    index = 0;
+  }
+  flipped = false;
+  renderCard();
+});
+
+clearBtn.addEventListener("click", () => {
+  if (!marks.size) return;
+  if (!confirm("清空全部「没记住」标记？")) return;
+  marks = new Set();
+  saveMarks();
+  if (filter === "forgotten") {
+    index = 0;
+    flipped = false;
+    buildList();
+  }
+  renderFilters();
+  renderCard();
+});
+
+cardEl.addEventListener("click", (e) => {
+  if (ignoreClick) { ignoreClick = false; return; }
+  if (e.target.closest("button")) return;
+  if (!list.length) return;
+  flipped = !flipped;
+  renderCard();
+});
+
+forgetBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const c = list[index];
+  if (!c) return;
+  marks.add(c.id);
+  saveMarks();
+  renderFilters();
+  if (filter === "forgotten") {
+    buildList();
+    const i = list.findIndex((x) => x.id === c.id);
+    index = i >= 0 ? i : index;
+    go(index + (list.length ? 1 : 0));
+  } else {
+    go(index + 1);
+  }
+});
+
+rememberBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const c = list[index];
+  if (!c) return;
+  const id = c.id;
+  marks.delete(id);
+  saveMarks();
+  renderFilters();
+  if (filter === "forgotten") {
+    const nextId = list[index + 1] ? list[index + 1].id : (list[0] && list[0].id !== id ? list[0].id : null);
+    buildList();
+    if (!list.length) { index = 0; flipped = false; renderCard(); return; }
+    const i = nextId ? list.findIndex((x) => x.id === nextId) : 0;
+    go(i >= 0 ? i : 0);
+  } else {
+    go(index + 1);
+  }
+});
+
+prevBtn.addEventListener("click", () => go(index - 1));
+nextBtn.addEventListener("click", () => go(index + 1));
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") { e.preventDefault(); go(index - 1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); go(index + 1); }
+  else if (e.key === " " || e.key === "Enter") {
+    if (e.target && (e.target.tagName === "BUTTON")) return;
+    e.preventDefault();
+    if (!list.length) return;
+    flipped = !flipped;
+    renderCard();
+  }
+});
+
+let startX = 0, startY = 0, tracking = false, swiping = false;
+
+cardWrap.addEventListener("touchstart", (e) => {
+  const t = e.changedTouches[0];
+  startX = t.clientX;
+  startY = t.clientY;
+  tracking = true;
+  swiping = false;
+}, { passive: true });
+
+cardWrap.addEventListener("touchmove", (e) => {
+  if (!tracking) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - startX;
+  const dy = t.clientY - startY;
+  if (!swiping && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    swiping = true;
+  }
+  if (swiping) e.preventDefault();
+}, { passive: false });
+
+cardWrap.addEventListener("touchend", (e) => {
+  if (!tracking) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - startX;
+  const dy = t.clientY - startY;
+  tracking = false;
+  if (swiping && Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy)) {
+    ignoreClick = true;
+    if (dx < 0) go(index + 1);
+    else go(index - 1);
+  }
+  swiping = false;
+}, { passive: true });
+
+cardWrap.addEventListener("touchcancel", () => { tracking = false; swiping = false; });
+
+buildList();
+renderFilters();
+renderCard();
+</script>
+</body>
+</html>
