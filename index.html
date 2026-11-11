@@ -236,6 +236,33 @@
     margin-top: 8px;
   }
   .nav .btn { flex: 1; }
+
+  .strategy {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #57534e;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 0 0 8px;
+  }
+  .origin {
+    font-size: 11px;
+    color: var(--muted);
+    margin: -4px 0 12px;
+    flex: 0 0 auto;
+  }
+  .hint-strategy {
+    flex: 0 0 auto;
+    margin-top: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #9a3412;
+    background: #fff7ed;
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -243,6 +270,7 @@
   <header>
     <h1>N2 听力 · <span>即时应答</span></h1>
     <div class="filters" id="filters"></div>
+    <div class="strategy hidden" id="strategy"></div>
     <div class="toolbar">
       <div class="pos" id="pos">0 / 0</div>
       <div class="tools">
@@ -274,68 +302,28 @@
 const GROUPS = [
   {
     "id": 1,
-    "name": "許可を求める",
-    "zh": "求许可"
+    "name": "答应 / 婉拒",
+    "strategy": "对方求许可或请求，回答只有「答应」或「婉拒」两条路。"
   },
   {
     "id": 2,
-    "name": "問いかける",
-    "zh": "提问确认"
+    "name": "知道了＋我会怎么做",
+    "strategy": "回答是「知道了＋我会怎么做」；禁止类可能多一句「那换个地方行吗」的反问。"
   },
   {
     "id": 3,
-    "name": "非難する・苦情を言う",
-    "zh": "指责/抱怨"
+    "name": "给信息 / 我去查",
+    "strategy": "对方向你要信息，要么给，要么说「我去查」。"
   },
   {
     "id": 4,
-    "name": "指示する",
-    "zh": "下指示"
+    "name": "先接住态度",
+    "strategy": "对方不是要你做什么，而是在表达态度，先接住这个态度。"
   },
   {
     "id": 5,
-    "name": "確認する",
-    "zh": "确认"
-  },
-  {
-    "id": 6,
-    "name": "定型表現",
-    "zh": "套话"
-  },
-  {
-    "id": 7,
-    "name": "禁止する（注意する）",
-    "zh": "禁止/提醒"
-  },
-  {
-    "id": 8,
-    "name": "お願いする（依頼する）",
-    "zh": "请求"
-  },
-  {
-    "id": 9,
-    "name": "強い気持ちを表す",
-    "zh": "表达强烈情绪"
-  },
-  {
-    "id": 10,
-    "name": "感心する",
-    "zh": "感叹佩服"
-  },
-  {
-    "id": 11,
-    "name": "義務・当然を表す",
-    "zh": "表达义务/理所当然"
-  },
-  {
-    "id": 12,
-    "name": "丁寧に断る",
-    "zh": "委婉拒绝"
-  },
-  {
-    "id": 13,
-    "name": "考えを伝える",
-    "zh": "表达想法"
+    "name": "套话（死记）",
+    "strategy": "没有规律，按场景死记。"
   }
 ];
 const CARDS = [
@@ -349,7 +337,8 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "はい、どうぞご覧ください",
     "answer_zh": "可以，请看",
-    "practice": null
+    "practice": null,
+    "origin": "許可を求める"
   },
   {
     "id": "1-2",
@@ -361,7 +350,8 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "ここはちょっと……",
     "answer_zh": "这里不太方便……（婉拒）",
-    "practice": null
+    "practice": null,
+    "origin": "許可を求める"
   },
   {
     "id": "1-3",
@@ -373,7 +363,8 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "どうぞお使いください",
     "answer_zh": "请用",
-    "practice": 1
+    "practice": 1,
+    "origin": "許可を求める"
   },
   {
     "id": "1-4",
@@ -385,407 +376,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "どうぞお使いください",
     "answer_zh": "请用",
-    "practice": null
-  },
-  {
-    "id": "2-1",
-    "group": 2,
-    "pattern": "〜ったっけ",
-    "prompt_speaker": "",
-    "prompt": "今日、何か宿題、あったっけ?",
-    "prompt_zh": "今天有布置作业吗，我记不清了",
-    "answer_speaker": "",
-    "answer": "何も出てなかったと思うよ",
-    "answer_zh": "我记得没布置",
-    "practice": 2
-  },
-  {
-    "id": "2-2",
-    "group": 2,
-    "pattern": "〜かな",
-    "prompt_speaker": "",
-    "prompt": "このかばん、いくらぐらいするのかな?",
-    "prompt_zh": "这包大概多少钱呢",
-    "answer_speaker": "",
-    "answer": "きっと高いでしょうね",
-    "answer_zh": "肯定很贵吧",
-    "practice": null
-  },
-  {
-    "id": "2-3",
-    "group": 2,
-    "pattern": "〜たでしょうか（郑重问法）",
-    "prompt_speaker": "店員",
-    "prompt": "お客さま、何かございましたでしょうか",
-    "prompt_zh": "客人，有什么问题吗",
-    "answer_speaker": "客",
-    "answer": "これ、注文と違うんですが",
-    "answer_zh": "这跟我点的不一样",
-    "practice": null
-  },
-  {
-    "id": "3-1",
-    "group": 3,
-    "pattern": "〜じゃない",
-    "prompt_speaker": "",
-    "prompt": "こんな書き方じゃ、わかるわけないじゃない",
-    "prompt_zh": "这么写谁能看懂啊",
-    "answer_speaker": "",
-    "answer": "もう一度。書き直します",
-    "answer_zh": "我重写一遍",
-    "practice": null
-  },
-  {
-    "id": "3-2",
-    "group": 3,
-    "pattern": "〜じゃないか",
-    "prompt_speaker": "",
-    "prompt": "なんだ、全然仕事が進んでないじゃないか",
-    "prompt_zh": "怎么搞的，工作一点都没进展嘛",
-    "answer_speaker": "",
-    "answer": "すみません。昨日より進んだほうなんですが",
-    "answer_zh": "抱歉，其实比昨天有进展了",
-    "practice": null
-  },
-  {
-    "id": "3-3",
-    "group": 3,
-    "pattern": "〜なんて……",
-    "prompt_speaker": "",
-    "prompt": "昨日待ってたのに、だまって、帰るなんて……",
-    "prompt_zh": "昨天我等了你，你居然一声不吭就走了……",
-    "answer_speaker": "",
-    "answer": "あ、ごめん。急用ができちゃって",
-    "answer_zh": "啊抱歉，临时有急事",
-    "practice": null
-  },
-  {
-    "id": "3-4",
-    "group": 3,
-    "pattern": "〜ばいいというものじゃない",
-    "prompt_speaker": "",
-    "prompt": "謝ればいいってもんじゃないでしょう",
-    "prompt_zh": "不是道个歉就完事了吧",
-    "answer_speaker": "",
-    "answer": "すみません",
-    "answer_zh": "对不起",
-    "practice": null
-  },
-  {
-    "id": "4-1",
-    "group": 4,
-    "pattern": "〜てみて",
-    "prompt_speaker": "",
-    "prompt": "見た目はともかく、味をもう少し工夫してみて",
-    "prompt_zh": "外观先不说，味道再琢磨一下",
-    "answer_speaker": "",
-    "answer": "はい。じゃ、もう少し塩を入れてみます",
-    "answer_zh": "好，那我再加点盐试试",
-    "practice": 4
-  },
-  {
-    "id": "4-2",
-    "group": 4,
-    "pattern": "〜てもらって",
-    "prompt_speaker": "上司",
-    "prompt": "山村さんに10時に事務所に来てもらって",
-    "prompt_zh": "让山村10点来事务所",
-    "answer_speaker": "秘書",
-    "answer": "はい、わかりました",
-    "answer_zh": "好的",
-    "practice": null
-  },
-  {
-    "id": "4-3",
-    "group": 4,
-    "pattern": "〜といて（＝〜ておいて的口语）",
-    "prompt_speaker": "上司",
-    "prompt": "例の件、みんなに連絡しといて",
-    "prompt_zh": "那件事先通知大家一下",
-    "answer_speaker": "部下",
-    "answer": "わかりました。今日中にしておきます",
-    "answer_zh": "好的，今天之内办好",
-    "practice": null
-  },
-  {
-    "id": "4-4",
-    "group": 4,
-    "pattern": "〜ように",
-    "prompt_speaker": "先生",
-    "prompt": "この作文は、来週の月曜日に出すように",
-    "prompt_zh": "这篇作文下周一交",
-    "answer_speaker": "学生",
-    "answer": "はい、わかりました",
-    "answer_zh": "好的",
-    "practice": null
-  },
-  {
-    "id": "4-5",
-    "group": 4,
-    "pattern": "（〜は）任せた",
-    "prompt_speaker": "上司",
-    "prompt": "この仕事、田中君に任せたよ",
-    "prompt_zh": "这项工作就交给田中你了",
-    "answer_speaker": "部下",
-    "answer": "はい、精一杯がんばります",
-    "answer_zh": "好的，我会全力以赴",
-    "practice": null
-  },
-  {
-    "id": "5-1",
-    "group": 5,
-    "pattern": "〜たよね",
-    "prompt_speaker": "",
-    "prompt": "会議って、3時からでしたよね",
-    "prompt_zh": "会议是3点开始对吧",
-    "answer_speaker": "",
-    "answer": "ちょっと確認します",
-    "answer_zh": "我确认一下",
-    "practice": 5
-  },
-  {
-    "id": "5-2",
-    "group": 5,
-    "pattern": "〜だった?",
-    "prompt_speaker": "夫",
-    "prompt": "買い物、これだった?",
-    "prompt_zh": "要买的是这个吧？",
-    "answer_speaker": "妻",
-    "answer": "そう。ありがとう",
-    "answer_zh": "对，谢谢",
-    "practice": null
-  },
-  {
-    "id": "5-3",
-    "group": 5,
-    "pattern": "確かに〜か",
-    "prompt_speaker": "店員",
-    "prompt": "確かにここに置かれましたか",
-    "prompt_zh": "您确定是放在这里的吗",
-    "answer_speaker": "客",
-    "answer": "ええ、置いたと思うんですけど",
-    "answer_zh": "是的，我记得放这儿了",
-    "practice": null
-  },
-  {
-    "id": "5-4",
-    "group": 5,
-    "pattern": "〜で間違いないですか",
-    "prompt_speaker": "",
-    "prompt": "締切って、明日で間違いないですか",
-    "prompt_zh": "截止日期确定是明天吗",
-    "answer_speaker": "",
-    "answer": "いいえ、あさってですよ",
-    "answer_zh": "不，是后天",
-    "practice": null
-  },
-  {
-    "id": "6-1",
-    "group": 6,
-    "pattern": "（收到伴手礼时）",
-    "prompt_speaker": "",
-    "prompt": "これ、フランスのおみやげ、少しだけど、どうぞ",
-    "prompt_zh": "这是从法国带的一点点小礼物，请收下",
-    "answer_speaker": "",
-    "answer": "いつもすみません。行くたびに、買ってきていただいて",
-    "answer_zh": "每次都麻烦您带东西，真不好意思",
-    "practice": 6
-  },
-  {
-    "id": "6-2",
-    "group": 6,
-    "pattern": "（商务电话转接）",
-    "prompt_speaker": "",
-    "prompt": "折り返しお電話いたしましょうか",
-    "prompt_zh": "要不要请他回电给您",
-    "answer_speaker": "",
-    "answer": "はい、お願いします",
-    "answer_zh": "好的，麻烦了",
-    "practice": null
-  },
-  {
-    "id": "6-3",
-    "group": 6,
-    "pattern": "（书店代为保留）",
-    "prompt_speaker": "店員",
-    "prompt": "お取り置き、できますが",
-    "prompt_zh": "可以帮您留着",
-    "answer_speaker": "客",
-    "answer": "では、お願いします",
-    "answer_zh": "那就麻烦了",
-    "practice": null
-  },
-  {
-    "id": "6-4",
-    "group": 6,
-    "pattern": "（车站补票）",
-    "prompt_speaker": "駅員",
-    "prompt": "乗り越しのご清算は、あちらの機械でお願いいたします",
-    "prompt_zh": "补票请到那边的机器办理",
-    "answer_speaker": "客",
-    "answer": "あの機械ですね。わかりました",
-    "answer_zh": "那台机器是吧，明白了",
-    "practice": null
-  },
-  {
-    "id": "6-5",
-    "group": 6,
-    "pattern": "（寒暄，久未联系）",
-    "prompt_speaker": "",
-    "prompt": "ご無沙汰ばかりで申し訳ありません",
-    "prompt_zh": "一直没联系，很抱歉",
-    "answer_speaker": "",
-    "answer": "こちらこそご無沙汰いたしております",
-    "answer_zh": "我这边也是，彼此彼此",
-    "practice": null
-  },
-  {
-    "id": "6-6",
-    "group": 6,
-    "pattern": "（店内，付款方式）",
-    "prompt_speaker": "店員",
-    "prompt": "お支払いは1回でよろしいですか",
-    "prompt_zh": "一次性付款可以吗",
-    "answer_speaker": "客",
-    "answer": "いえ、2回でお願いします",
-    "answer_zh": "不，请分两次",
-    "practice": null
-  },
-  {
-    "id": "6-7",
-    "group": 6,
-    "pattern": "（餐厅结账）",
-    "prompt_speaker": "店員",
-    "prompt": "お会計はご一緒でよろしいですか",
-    "prompt_zh": "一起结账可以吗",
-    "answer_speaker": "客",
-    "answer": "いえ、別々で",
-    "answer_zh": "不，分开算",
-    "practice": null
-  },
-  {
-    "id": "6-8",
-    "group": 6,
-    "pattern": "（商务场合接待）",
-    "prompt_speaker": "",
-    "prompt": "山本さん、いらっしゃいますでしょうか",
-    "prompt_zh": "请问山本先生在吗",
-    "answer_speaker": "",
-    "answer": "失礼ですが……",
-    "answer_zh": "不好意思，请问您是……",
-    "practice": null
-  },
-  {
-    "id": "6-9",
-    "group": 6,
-    "pattern": "（寒暄，答谢礼物）",
-    "prompt_speaker": "",
-    "prompt": "先日は結構なものを頂戴しまして、ありがとうございました",
-    "prompt_zh": "前几天收到您的厚礼，非常感谢",
-    "answer_speaker": "",
-    "answer": "いえ、少しばかりで申し訳ありません",
-    "answer_zh": "不客气，一点小心意，不成敬意",
-    "practice": null
-  },
-  {
-    "id": "6-10",
-    "group": 6,
-    "pattern": "（打电话订酒店房间）",
-    "prompt_speaker": "客",
-    "prompt": "12日にツインでお願いしたいんですが",
-    "prompt_zh": "我想订12号的双床房",
-    "answer_speaker": "フロント",
-    "answer": "12日、ツインでございますね。ご用意できます",
-    "answer_zh": "12号双床房，好的，可以安排",
-    "practice": null
-  },
-  {
-    "id": "6-11",
-    "group": 6,
-    "pattern": "（店内换零钱）",
-    "prompt_speaker": "客",
-    "prompt": "すみません。細かいのがなくて……",
-    "prompt_zh": "不好意思，我没有零钱……",
-    "answer_speaker": "店員",
-    "answer": "両替しましょうか",
-    "answer_zh": "要不要帮您换零钱",
-    "practice": null
-  },
-  {
-    "id": "6-12",
-    "group": 6,
-    "pattern": "（久别重逢寒暄）",
-    "prompt_speaker": "",
-    "prompt": "久しぶりですね。お元気ですか",
-    "prompt_zh": "好久不见，最近好吗",
-    "answer_speaker": "",
-    "answer": "はい、おかげさまで",
-    "answer_zh": "挺好的，托您的福",
-    "practice": null
-  },
-  {
-    "id": "7-1",
-    "group": 7,
-    "pattern": "〜ないこと",
-    "prompt_speaker": "上司",
-    "prompt": "お客様には失礼な態度はとらないこと、いいですね",
-    "prompt_zh": "不许对客人失礼，明白吗",
-    "answer_speaker": "部下",
-    "answer": "はい、わかりました",
-    "answer_zh": "明白",
-    "practice": null
-  },
-  {
-    "id": "7-2",
-    "group": 7,
-    "pattern": "〜はだめ",
-    "prompt_speaker": "",
-    "prompt": "ここは自転車はだめよ",
-    "prompt_zh": "这里不能骑自行车",
-    "answer_speaker": "",
-    "answer": "じゃ、そこならいいですか",
-    "answer_zh": "那那边可以吗",
-    "practice": 7
-  },
-  {
-    "id": "7-3",
-    "group": 7,
-    "pattern": "〜べきではない",
-    "prompt_speaker": "先輩",
-    "prompt": "親にそんなこと、言うべきではないよ",
-    "prompt_zh": "不该对父母说那种话",
-    "answer_speaker": "後輩",
-    "answer": "わかってはいるんですけどね。つい……",
-    "answer_zh": "我也知道，可就是忍不住……",
-    "practice": null
-  },
-  {
-    "id": "7-4",
-    "group": 7,
-    "pattern": "〜っぱなし",
-    "prompt_speaker": "妻",
-    "prompt": "あなた、またトイレの電気、つけっぱなしよ",
-    "prompt_zh": "你又忘关厕所灯了",
-    "answer_speaker": "夫",
-    "answer": "あ、ごめん",
-    "answer_zh": "啊，抱歉",
-    "practice": null
-  },
-  {
-    "id": "7-5",
-    "group": 7,
-    "pattern": "〜ないことになる",
-    "prompt_speaker": "事務員",
-    "prompt": "このコピー機は、学生は使えないことになっていますよ",
-    "prompt_zh": "这台复印机规定学生不能用",
-    "answer_speaker": "学生",
-    "answer": "あ、そうですか。学生用のはどこにありますか",
-    "answer_zh": "这样啊，学生用的在哪里",
-    "practice": null
+    "practice": null,
+    "origin": "許可を求める"
   },
   {
     "id": "8-1",
-    "group": 8,
+    "group": 1,
     "pattern": "〜てもらえるとありがたいんですが",
     "prompt_speaker": "",
     "prompt": "日曜日の引っ越し、手伝ってもらえるとありがたいんだけど",
@@ -793,11 +389,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "日曜なら、問題ないですよ",
     "answer_zh": "周日的话没问题",
-    "practice": 8
+    "practice": 8,
+    "origin": "お願いする（依頼する）"
   },
   {
     "id": "8-2",
-    "group": 8,
+    "group": 1,
     "pattern": "〜てくれないかな",
     "prompt_speaker": "",
     "prompt": "悪いけど、時間、変更してくれないかな?",
@@ -805,11 +402,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "ええー、急に言われても……",
     "answer_zh": "哎，突然这么说……",
-    "practice": null
+    "practice": null,
+    "origin": "お願いする（依頼する）"
   },
   {
     "id": "8-3",
-    "group": 8,
+    "group": 1,
     "pattern": "〜といて",
     "prompt_speaker": "",
     "prompt": "これ、山田さんに渡しといて",
@@ -817,11 +415,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "わかった",
     "answer_zh": "知道了",
-    "practice": null
+    "practice": null,
+    "origin": "お願いする（依頼する）"
   },
   {
     "id": "8-4",
-    "group": 8,
+    "group": 1,
     "pattern": "〜てて",
     "prompt_speaker": "",
     "prompt": "少し待ってて",
@@ -829,11 +428,285 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "うん。時間、ないから、急いで",
     "answer_zh": "嗯，时间不多了，快点",
-    "practice": null
+    "practice": null,
+    "origin": "お願いする（依頼する）"
+  },
+  {
+    "id": "4-1",
+    "group": 2,
+    "pattern": "〜てみて",
+    "prompt_speaker": "",
+    "prompt": "見た目はともかく、味をもう少し工夫してみて",
+    "prompt_zh": "外观先不说，味道再琢磨一下",
+    "answer_speaker": "",
+    "answer": "はい。じゃ、もう少し塩を入れてみます",
+    "answer_zh": "好，那我再加点盐试试",
+    "practice": 4,
+    "origin": "指示する"
+  },
+  {
+    "id": "4-2",
+    "group": 2,
+    "pattern": "〜てもらって",
+    "prompt_speaker": "上司",
+    "prompt": "山村さんに10時に事務所に来てもらって",
+    "prompt_zh": "让山村10点来事务所",
+    "answer_speaker": "秘書",
+    "answer": "はい、わかりました",
+    "answer_zh": "好的",
+    "practice": null,
+    "origin": "指示する"
+  },
+  {
+    "id": "4-3",
+    "group": 2,
+    "pattern": "〜といて（＝〜ておいて的口语）",
+    "prompt_speaker": "上司",
+    "prompt": "例の件、みんなに連絡しといて",
+    "prompt_zh": "那件事先通知大家一下",
+    "answer_speaker": "部下",
+    "answer": "わかりました。今日中にしておきます",
+    "answer_zh": "好的，今天之内办好",
+    "practice": null,
+    "origin": "指示する"
+  },
+  {
+    "id": "4-4",
+    "group": 2,
+    "pattern": "〜ように",
+    "prompt_speaker": "先生",
+    "prompt": "この作文は、来週の月曜日に出すように",
+    "prompt_zh": "这篇作文下周一交",
+    "answer_speaker": "学生",
+    "answer": "はい、わかりました",
+    "answer_zh": "好的",
+    "practice": null,
+    "origin": "指示する"
+  },
+  {
+    "id": "4-5",
+    "group": 2,
+    "pattern": "（〜は）任せた",
+    "prompt_speaker": "上司",
+    "prompt": "この仕事、田中君に任せたよ",
+    "prompt_zh": "这项工作就交给田中你了",
+    "answer_speaker": "部下",
+    "answer": "はい、精一杯がんばります",
+    "answer_zh": "好的，我会全力以赴",
+    "practice": null,
+    "origin": "指示する"
+  },
+  {
+    "id": "7-1",
+    "group": 2,
+    "pattern": "〜ないこと",
+    "prompt_speaker": "上司",
+    "prompt": "お客様には失礼な態度はとらないこと、いいですね",
+    "prompt_zh": "不许对客人失礼，明白吗",
+    "answer_speaker": "部下",
+    "answer": "はい、わかりました",
+    "answer_zh": "明白",
+    "practice": null,
+    "origin": "禁止する（注意する）"
+  },
+  {
+    "id": "7-2",
+    "group": 2,
+    "pattern": "〜はだめ",
+    "prompt_speaker": "",
+    "prompt": "ここは自転車はだめよ",
+    "prompt_zh": "这里不能骑自行车",
+    "answer_speaker": "",
+    "answer": "じゃ、そこならいいですか",
+    "answer_zh": "那那边可以吗",
+    "practice": 7,
+    "origin": "禁止する（注意する）"
+  },
+  {
+    "id": "7-3",
+    "group": 2,
+    "pattern": "〜べきではない",
+    "prompt_speaker": "先輩",
+    "prompt": "親にそんなこと、言うべきではないよ",
+    "prompt_zh": "不该对父母说那种话",
+    "answer_speaker": "後輩",
+    "answer": "わかってはいるんですけどね。つい……",
+    "answer_zh": "我也知道，可就是忍不住……",
+    "practice": null,
+    "origin": "禁止する（注意する）"
+  },
+  {
+    "id": "7-4",
+    "group": 2,
+    "pattern": "〜っぱなし",
+    "prompt_speaker": "妻",
+    "prompt": "あなた、またトイレの電気、つけっぱなしよ",
+    "prompt_zh": "你又忘关厕所灯了",
+    "answer_speaker": "夫",
+    "answer": "あ、ごめん",
+    "answer_zh": "啊，抱歉",
+    "practice": null,
+    "origin": "禁止する（注意する）"
+  },
+  {
+    "id": "7-5",
+    "group": 2,
+    "pattern": "〜ないことになる",
+    "prompt_speaker": "事務員",
+    "prompt": "このコピー機は、学生は使えないことになっていますよ",
+    "prompt_zh": "这台复印机规定学生不能用",
+    "answer_speaker": "学生",
+    "answer": "あ、そうですか。学生用のはどこにありますか",
+    "answer_zh": "这样啊，学生用的在哪里",
+    "practice": null,
+    "origin": "禁止する（注意する）"
+  },
+  {
+    "id": "2-1",
+    "group": 3,
+    "pattern": "〜ったっけ",
+    "prompt_speaker": "",
+    "prompt": "今日、何か宿題、あったっけ?",
+    "prompt_zh": "今天有布置作业吗，我记不清了",
+    "answer_speaker": "",
+    "answer": "何も出てなかったと思うよ",
+    "answer_zh": "我记得没布置",
+    "practice": 2,
+    "origin": "問いかける"
+  },
+  {
+    "id": "2-2",
+    "group": 3,
+    "pattern": "〜かな",
+    "prompt_speaker": "",
+    "prompt": "このかばん、いくらぐらいするのかな?",
+    "prompt_zh": "这包大概多少钱呢",
+    "answer_speaker": "",
+    "answer": "きっと高いでしょうね",
+    "answer_zh": "肯定很贵吧",
+    "practice": null,
+    "origin": "問いかける"
+  },
+  {
+    "id": "2-3",
+    "group": 3,
+    "pattern": "〜たでしょうか（郑重问法）",
+    "prompt_speaker": "店員",
+    "prompt": "お客さま、何かございましたでしょうか",
+    "prompt_zh": "客人，有什么问题吗",
+    "answer_speaker": "客",
+    "answer": "これ、注文と違うんですが",
+    "answer_zh": "这跟我点的不一样",
+    "practice": null,
+    "origin": "問いかける"
+  },
+  {
+    "id": "5-1",
+    "group": 3,
+    "pattern": "〜たよね",
+    "prompt_speaker": "",
+    "prompt": "会議って、3時からでしたよね",
+    "prompt_zh": "会议是3点开始对吧",
+    "answer_speaker": "",
+    "answer": "ちょっと確認します",
+    "answer_zh": "我确认一下",
+    "practice": 5,
+    "origin": "確認する"
+  },
+  {
+    "id": "5-2",
+    "group": 3,
+    "pattern": "〜だった?",
+    "prompt_speaker": "夫",
+    "prompt": "買い物、これだった?",
+    "prompt_zh": "要买的是这个吧？",
+    "answer_speaker": "妻",
+    "answer": "そう。ありがとう",
+    "answer_zh": "对，谢谢",
+    "practice": null,
+    "origin": "確認する"
+  },
+  {
+    "id": "5-3",
+    "group": 3,
+    "pattern": "確かに〜か",
+    "prompt_speaker": "店員",
+    "prompt": "確かにここに置かれましたか",
+    "prompt_zh": "您确定是放在这里的吗",
+    "answer_speaker": "客",
+    "answer": "ええ、置いたと思うんですけど",
+    "answer_zh": "是的，我记得放这儿了",
+    "practice": null,
+    "origin": "確認する"
+  },
+  {
+    "id": "5-4",
+    "group": 3,
+    "pattern": "〜で間違いないですか",
+    "prompt_speaker": "",
+    "prompt": "締切って、明日で間違いないですか",
+    "prompt_zh": "截止日期确定是明天吗",
+    "answer_speaker": "",
+    "answer": "いいえ、あさってですよ",
+    "answer_zh": "不，是后天",
+    "practice": null,
+    "origin": "確認する"
+  },
+  {
+    "id": "3-1",
+    "group": 4,
+    "pattern": "〜じゃない",
+    "prompt_speaker": "",
+    "prompt": "こんな書き方じゃ、わかるわけないじゃない",
+    "prompt_zh": "这么写谁能看懂啊",
+    "answer_speaker": "",
+    "answer": "もう一度、書き直します",
+    "answer_zh": "我重写一遍",
+    "practice": null,
+    "origin": "非難する・苦情を言う"
+  },
+  {
+    "id": "3-2",
+    "group": 4,
+    "pattern": "〜じゃないか",
+    "prompt_speaker": "",
+    "prompt": "なんだ、全然仕事が進んでないじゃないか",
+    "prompt_zh": "怎么搞的，工作一点都没进展嘛",
+    "answer_speaker": "",
+    "answer": "すみません。昨日より進んだほうなんですが",
+    "answer_zh": "抱歉，其实比昨天有进展了",
+    "practice": null,
+    "origin": "非難する・苦情を言う"
+  },
+  {
+    "id": "3-3",
+    "group": 4,
+    "pattern": "〜なんて……",
+    "prompt_speaker": "",
+    "prompt": "昨日待ってたのに、だまって、帰るなんて……",
+    "prompt_zh": "昨天我等了你，你居然一声不吭就走了……",
+    "answer_speaker": "",
+    "answer": "あ、ごめん。急用ができちゃって",
+    "answer_zh": "啊抱歉，临时有急事",
+    "practice": null,
+    "origin": "非難する・苦情を言う"
+  },
+  {
+    "id": "3-4",
+    "group": 4,
+    "pattern": "〜ばいいというものじゃない",
+    "prompt_speaker": "",
+    "prompt": "謝ればいいってもんじゃないでしょう",
+    "prompt_zh": "不是道个歉就完事了吧",
+    "answer_speaker": "",
+    "answer": "すみません",
+    "answer_zh": "对不起",
+    "practice": null,
+    "origin": "非難する・苦情を言う"
   },
   {
     "id": "9-1",
-    "group": 9,
+    "group": 4,
     "pattern": "〜（て/で）ならない",
     "prompt_speaker": "",
     "prompt": "息子の就職が決まらないので、心配でならないよ",
@@ -841,11 +714,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そうですか。それはご心配ですね",
     "answer_zh": "是吗，那确实让人担心",
-    "practice": null
+    "practice": null,
+    "origin": "強い気持ちを表す"
   },
   {
     "id": "9-2",
-    "group": 9,
+    "group": 4,
     "pattern": "〜てたまらない／〜てしょうがない",
     "prompt_speaker": "",
     "prompt": "昨日から歯が痛くてたまらないの",
@@ -853,11 +727,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "歯医者に行ったほうがいいよ",
     "answer_zh": "还是去看牙医比较好",
-    "practice": null
+    "practice": null,
+    "origin": "強い気持ちを表す"
   },
   {
     "id": "9-3",
-    "group": 9,
+    "group": 4,
     "pattern": "〜もんか",
     "prompt_speaker": "",
     "prompt": "遊んでばかりいるジョンさんが試験に合格できるもんか",
@@ -865,11 +740,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そうよね。絶対無理よね",
     "answer_zh": "就是，绝对不可能",
-    "practice": 9
+    "practice": 9,
+    "origin": "強い気持ちを表す"
   },
   {
     "id": "10-1",
-    "group": 10,
+    "group": 4,
     "pattern": "〜もの",
     "prompt_speaker": "",
     "prompt": "安い材料でも、おいしい料理が作れるもんなのね",
@@ -877,11 +753,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "ぼくの腕がいいんだよ",
     "answer_zh": "因为我手艺好嘛",
-    "practice": 10
+    "practice": 10,
+    "origin": "感心する"
   },
   {
     "id": "10-2",
-    "group": 10,
+    "group": 4,
     "pattern": "さすが〜だけあって",
     "prompt_speaker": "",
     "prompt": "さすがスピーチ大会で優勝しただけあって、日本語がお上手ね",
@@ -889,11 +766,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "いえ、まだまだです",
     "answer_zh": "哪里哪里，还差得远",
-    "practice": null
+    "practice": null,
+    "origin": "感心する"
   },
   {
     "id": "10-3",
-    "group": 10,
+    "group": 4,
     "pattern": "〜にしかできないことだ",
     "prompt_speaker": "",
     "prompt": "あんなプレーはプロにしかできないことだね",
@@ -901,11 +779,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "うん、ぼくたちには無理だね",
     "answer_zh": "是啊，我们做不到",
-    "practice": null
+    "practice": null,
+    "origin": "感心する"
   },
   {
     "id": "10-4",
-    "group": 10,
+    "group": 4,
     "pattern": "〜なんて（信じられない）",
     "prompt_speaker": "",
     "prompt": "この絵を小学生が描いたなんて……",
@@ -913,11 +792,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "本当にすばらしいですね",
     "answer_zh": "真的很厉害",
-    "practice": null
+    "practice": null,
+    "origin": "感心する"
   },
   {
     "id": "10-5",
-    "group": 10,
+    "group": 4,
     "pattern": "〜くらい〜は（い）ない",
     "prompt_speaker": "",
     "prompt": "チンさんくらいよく勉強する人はいないね",
@@ -925,11 +805,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "本当だね。あんなに真面目な人、見たことないよ",
     "answer_zh": "真的，没见过比她更认真的人",
-    "practice": null
+    "practice": null,
+    "origin": "感心する"
   },
   {
     "id": "10-6",
-    "group": 10,
+    "group": 4,
     "pattern": "〜わりには（〜にしては）",
     "prompt_speaker": "",
     "prompt": "杉浦さん、子供が3人もいるわりには、若いわね",
@@ -937,11 +818,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "うん、まだ20代に見えるよね",
     "answer_zh": "是啊，看着还像二十几岁",
-    "practice": null
+    "practice": null,
+    "origin": "感心する"
   },
   {
     "id": "11-1",
-    "group": 11,
+    "group": 4,
     "pattern": "〜なきゃ（＝なければならない）",
     "prompt_speaker": "",
     "prompt": "今日は早く寝なきゃ",
@@ -949,11 +831,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "どうして?",
     "answer_zh": "为什么",
-    "practice": null
+    "practice": null,
+    "origin": "義務・当然を表す"
   },
   {
     "id": "11-2",
-    "group": 11,
+    "group": 4,
     "pattern": "〜なくちゃ（＝なくてはいけない）",
     "prompt_speaker": "",
     "prompt": "あと3キロダイエットしなくちゃ",
@@ -961,11 +844,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "する必要ないよ",
     "answer_zh": "没必要吧",
-    "practice": null
+    "practice": null,
+    "origin": "義務・当然を表す"
   },
   {
     "id": "11-3",
-    "group": 11,
+    "group": 4,
     "pattern": "〜は当たり前だ",
     "prompt_speaker": "",
     "prompt": "お世話になっている人に年賀状を書くのは当たり前だよ",
@@ -973,11 +857,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "それが日本の習慣なのね",
     "answer_zh": "原来这是日本的习惯",
-    "practice": 11
+    "practice": 11,
+    "origin": "義務・当然を表す"
   },
   {
     "id": "11-4",
-    "group": 11,
+    "group": 4,
     "pattern": "〜ないわけにはいかない",
     "prompt_speaker": "",
     "prompt": "部長の息子さんの結婚式、出席しないわけにはいかないわよね",
@@ -985,11 +870,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そうだね。部長にはお世話になっているからね",
     "answer_zh": "是啊，一直受部长照顾",
-    "practice": null
+    "practice": null,
+    "origin": "義務・当然を表す"
   },
   {
     "id": "12-1",
-    "group": 12,
+    "group": 4,
     "pattern": "お気持ちはありがたいんですが",
     "prompt_speaker": "",
     "prompt": "送別会ですか。お気持ちはありがたいんですが、1カ月しか働いていないので……",
@@ -997,11 +883,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そんな、期間は関係ありませんよ",
     "answer_zh": "没关系的，跟时间长短无关",
-    "practice": 12
+    "practice": 12,
+    "origin": "丁寧に断る"
   },
   {
     "id": "12-2",
-    "group": 12,
+    "group": 4,
     "pattern": "せっかく〜のに、申し訳ない（悪い）んですが",
     "prompt_speaker": "",
     "prompt": "せっかく買ってきてくれたのに、悪いんだけど、今ご飯、食べたばかりで……",
@@ -1009,11 +896,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "なら、後で食べて。冷蔵庫に入れておいたらいいし",
     "answer_zh": "那就晚点吃，先放冰箱里",
-    "practice": null
+    "practice": null,
+    "origin": "丁寧に断る"
   },
   {
     "id": "12-3",
-    "group": 12,
+    "group": 4,
     "pattern": "〜にはおよばない",
     "prompt_speaker": "",
     "prompt": "そんなお気遣いにはおよびません",
@@ -1021,11 +909,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "ほんの気持ちですから、どうぞ受け取ってください",
     "answer_zh": "这只是一点心意，请收下",
-    "practice": null
+    "practice": null,
+    "origin": "丁寧に断る"
   },
   {
     "id": "12-4",
-    "group": 12,
+    "group": 4,
     "pattern": "せっかくのお話なんですが……",
     "prompt_speaker": "",
     "prompt": "せっかくのお話なんですが、今好きな女性がいまして",
@@ -1033,11 +922,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "まあ、それはいいことね",
     "answer_zh": "那也是件好事",
-    "practice": null
+    "practice": null,
+    "origin": "丁寧に断る"
   },
   {
     "id": "13-1",
-    "group": 13,
+    "group": 4,
     "pattern": "〜んじゃないでしょうか",
     "prompt_speaker": "",
     "prompt": "この仕事、彼には無理なんじゃないでしょうか",
@@ -1045,11 +935,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "いや、彼なら、できますよ",
     "answer_zh": "不会，他能做到",
-    "practice": null
+    "practice": null,
+    "origin": "考えを伝える"
   },
   {
     "id": "13-2",
-    "group": 13,
+    "group": 4,
     "pattern": "〜んじゃない",
     "prompt_speaker": "",
     "prompt": "ヤンさん、遅いわね",
@@ -1057,11 +948,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "もう来ないんじゃない?",
     "answer_zh": "该不会不来了吧",
-    "practice": null
+    "practice": null,
+    "origin": "考えを伝える"
   },
   {
     "id": "13-3",
-    "group": 13,
+    "group": 4,
     "pattern": "〜んじゃないかと……",
     "prompt_speaker": "",
     "prompt": "彼女、ぼくのこと、嫌いになったんじゃないかと……",
@@ -1069,11 +961,12 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そんなことないって",
     "answer_zh": "不会的",
-    "practice": null
+    "practice": null,
+    "origin": "考えを伝える"
   },
   {
     "id": "13-4",
-    "group": 13,
+    "group": 4,
     "pattern": "〜気がする",
     "prompt_speaker": "",
     "prompt": "この宝くじ、当たる気がする",
@@ -1081,7 +974,164 @@ const CARDS = [
     "answer_speaker": "",
     "answer": "そんなはずないじゃん",
     "answer_zh": "不可能吧",
-    "practice": null
+    "practice": null,
+    "origin": "考えを伝える"
+  },
+  {
+    "id": "6-1",
+    "group": 5,
+    "pattern": "（收到伴手礼时）",
+    "prompt_speaker": "",
+    "prompt": "これ、フランスのおみやげ、少しだけど、どうぞ",
+    "prompt_zh": "这是从法国带的一点点小礼物，请收下",
+    "answer_speaker": "",
+    "answer": "いつもすみません。行くたびに、買ってきていただいて",
+    "answer_zh": "每次都麻烦您带东西，真不好意思",
+    "practice": 6,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-2",
+    "group": 5,
+    "pattern": "（商务电话转接）",
+    "prompt_speaker": "",
+    "prompt": "折り返しお電話いたしましょうか",
+    "prompt_zh": "要不要请他回电给您",
+    "answer_speaker": "",
+    "answer": "はい、お願いします",
+    "answer_zh": "好的，麻烦了",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-3",
+    "group": 5,
+    "pattern": "（书店代为保留）",
+    "prompt_speaker": "店員",
+    "prompt": "お取り置き、できますが",
+    "prompt_zh": "可以帮您留着",
+    "answer_speaker": "客",
+    "answer": "では、お願いします",
+    "answer_zh": "那就麻烦了",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-4",
+    "group": 5,
+    "pattern": "（车站补票）",
+    "prompt_speaker": "駅員",
+    "prompt": "乗り越しのご精算は、あちらの機械でお願いいたします",
+    "prompt_zh": "补票请到那边的机器办理",
+    "answer_speaker": "客",
+    "answer": "あの機械ですね。わかりました",
+    "answer_zh": "那台机器是吧，明白了",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-5",
+    "group": 5,
+    "pattern": "（寒暄，久未联系）",
+    "prompt_speaker": "",
+    "prompt": "ご無沙汰ばかりで申し訳ありません",
+    "prompt_zh": "一直没联系，很抱歉",
+    "answer_speaker": "",
+    "answer": "こちらこそご無沙汰いたしております",
+    "answer_zh": "我这边也是，彼此彼此",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-6",
+    "group": 5,
+    "pattern": "（店内，付款方式）",
+    "prompt_speaker": "店員",
+    "prompt": "お支払いは1回でよろしいですか",
+    "prompt_zh": "一次性付款可以吗",
+    "answer_speaker": "客",
+    "answer": "いえ、2回でお願いします",
+    "answer_zh": "不，请分两次",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-7",
+    "group": 5,
+    "pattern": "（餐厅结账）",
+    "prompt_speaker": "店員",
+    "prompt": "お会計はご一緒でよろしいですか",
+    "prompt_zh": "一起结账可以吗",
+    "answer_speaker": "客",
+    "answer": "いえ、別々で",
+    "answer_zh": "不，分开算",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-8",
+    "group": 5,
+    "pattern": "（商务场合接待）",
+    "prompt_speaker": "",
+    "prompt": "山本さん、いらっしゃいますでしょうか",
+    "prompt_zh": "请问山本先生在吗",
+    "answer_speaker": "",
+    "answer": "失礼ですが……",
+    "answer_zh": "不好意思，请问您是……",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-9",
+    "group": 5,
+    "pattern": "（寒暄，答谢礼物）",
+    "prompt_speaker": "",
+    "prompt": "先日は結構なものを頂戴しまして、ありがとうございました",
+    "prompt_zh": "前几天收到您的厚礼，非常感谢",
+    "answer_speaker": "",
+    "answer": "いえ、少しばかりで申し訳ありません",
+    "answer_zh": "不客气，一点小心意，不成敬意",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-10",
+    "group": 5,
+    "pattern": "（打电话订酒店房间）",
+    "prompt_speaker": "客",
+    "prompt": "12日にツインでお願いしたいんですが",
+    "prompt_zh": "我想订12号的双床房",
+    "answer_speaker": "フロント",
+    "answer": "12日、ツインでございますね。ご用意できます",
+    "answer_zh": "12号双床房，好的，可以安排",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-11",
+    "group": 5,
+    "pattern": "（店内换零钱）",
+    "prompt_speaker": "客",
+    "prompt": "すみません。細かいのがなくて……",
+    "prompt_zh": "不好意思，我没有零钱……",
+    "answer_speaker": "店員",
+    "answer": "両替しましょうか",
+    "answer_zh": "要不要帮您换零钱",
+    "practice": null,
+    "origin": "定型表現"
+  },
+  {
+    "id": "6-12",
+    "group": 5,
+    "pattern": "（久别重逢寒暄）",
+    "prompt_speaker": "",
+    "prompt": "久しぶりですね。お元気ですか",
+    "prompt_zh": "好久不见，最近好吗",
+    "answer_speaker": "",
+    "answer": "はい、おかげさまで",
+    "answer_zh": "挺好的，托您的福",
+    "practice": null,
+    "origin": "定型表現"
   }
 ];
 const STORAGE_KEY = "n2-sokuji-v1";
@@ -1154,22 +1204,35 @@ function buildList() {
   if (index >= list.length) index = Math.max(0, list.length - 1);
 }
 
+function renderStrategy() {
+  const el = $("strategy");
+  if (typeof filter === "number") {
+    const g = GROUPS.find((x) => x.id === filter);
+    el.textContent = g ? g.strategy : "";
+    el.classList.toggle("hidden", !g);
+  } else {
+    el.textContent = "";
+    el.classList.add("hidden");
+  }
+}
+
 function renderFilters() {
   const parts = [];
   const allActive = filter === "all" ? " active" : "";
   parts.push('<button type="button" class="chip' + allActive + '" data-filter="all">全部 · ' + CARDS.length + "</button>");
-  const fc = marks.size;
-  const fActive = filter === "forgotten" ? " active forgotten" : "";
-  parts.push('<button type="button" class="chip forgotten' + fActive + '" data-filter="forgotten">没记住 · ' + fc + "</button>");
   GROUPS.forEach((g) => {
     const n = CARDS.filter((c) => c.group === g.id).length;
     const active = filter === g.id ? " active" : "";
     parts.push(
       '<button type="button" class="chip' + active + '" data-filter="' + g.id + '">' +
-      g.id + " " + g.zh + " · " + n + "</button>"
+      g.id + " " + g.name + " · " + n + "</button>"
     );
   });
+  const fc = marks.size;
+  const fActive = filter === "forgotten" ? " active forgotten" : "";
+  parts.push('<button type="button" class="chip forgotten' + fActive + '" data-filter="forgotten">没记住 · ' + fc + "</button>");
   filtersEl.innerHTML = parts.join("");
+  renderStrategy();
 }
 
 function renderCard() {
@@ -1195,23 +1258,28 @@ function renderCard() {
 
   const c = list[index];
   const g = groupOf(c);
-  const meta = "第" + g.id + "组 · " + g.name + "（" + g.zh + "）";
+  const meta = "第" + g.id + "组 · " + g.name;
+  const origin = "原分类：" + c.origin;
   const practice = c.practice ? '<div class="badge">练习题' + c.practice + "</div>" : "";
+  const think = '<div class="hint-strategy">答题思路：' + g.strategy + "</div>";
 
   frontEl.innerHTML =
-    '<div class="meta"></div>'.replace("</div>", meta + "</div>") +
-    '<div class="pattern"></div>'.replace("</div>", c.pattern + "</div>") +
+    '<div class="meta">' + meta + "</div>" +
+    '<div class="origin">' + origin + "</div>" +
+    '<div class="pattern">' + c.pattern + "</div>" +
     '<div class="jp">' + quoteLine(c.prompt_speaker, c.prompt) + "</div>" +
     '<div class="hint">点击看答案 · 左右滑动切换</div>';
 
   backEl.innerHTML =
-    '<div class="meta"></div>'.replace("</div>", meta + "</div>") +
-    '<div class="pattern"></div>'.replace("</div>", c.pattern + "</div>") +
+    '<div class="meta">' + meta + "</div>" +
+    '<div class="origin">' + origin + "</div>" +
+    '<div class="pattern">' + c.pattern + "</div>" +
     '<div class="label">回答</div>' +
     '<div class="jp">' + quoteLine(c.answer_speaker, c.answer) + "</div>" +
     '<div class="zh"><b>问：</b>' + c.prompt_zh + "</div>" +
     '<div class="zh"><b>答：</b>' + c.answer_zh + "</div>" +
-    practice;
+    practice +
+    think;
 }
 
 function go(to, resetFlip) {
